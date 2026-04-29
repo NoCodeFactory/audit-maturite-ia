@@ -1,0 +1,81 @@
+{
+  "name": "Audit Maturité IA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e1d198d3-1733-40cc-887a-b64be699d603",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "e1d198d3-1733-40cc-887a-b64be699d603"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst level = data.level || 'Observateur';\nconst score = parseInt(data.score) || 0;\n\nconst content = {\n  Observateur: {\n    color: '#ea580c',\n    bgColor: '#fff4ef',\n    desc: \"L'IA est encore en dehors de vos pratiques quotidiennes. C'est le bon moment pour poser les bases et identifier vos premiers cas d'usage concrets.\",\n    recos: [\n      \"Identifiez 2 ou 3 tâches répétitives que l'IA pourrait prendre en charge dans votre équipe\",\n      \"Désignez un référent IA chargé de centraliser les expérimentations et partager les découvertes\",\n      \"Testez un outil IA sur une tâche concrète cette semaine et documentez le résultat\"\n    ]\n  },\n  Explorateur: {\n    color: '#b45309',\n    bgColor: '#fffbeb',\n    desc: \"Votre équipe a commencé à explorer l'IA, mais les usages restent isolés. Il est temps de structurer et de systématiser.\",\n    recos: [\n      \"Créez un espace partagé pour centraliser les prompts et bonnes pratiques de l'équipe\",\n      \"Automatisez un premier processus récurrent avec Make ou n8n\",\n      \"Organisez une session de formation collective sur le prompt engineering\"\n    ]\n  },\n  Praticien: {\n    color: '#0088cc',\n    bgColor: '#eff8ff',\n    desc: \"L'IA fait partie de votre quotidien. Vous êtes en bonne position pour industrialiser vos pratiques et poser un cadre clair avant de scaler.\",\n    recos: [\n      \"Mettez en place une charte d'usage de l'IA pour encadrer les pratiques et la confidentialité\",\n      \"Mesurez le retour sur investissement de vos automatisations actuelles pour les consolider\",\n      \"Étendez les bonnes pratiques aux membres les moins avancés de l'équipe\"\n    ]\n  },\n  Pionnier: {\n    color: '#16a34a',\n    bgColor: '#f0fdf4',\n    desc: \"Votre équipe est en avance sur l'adoption de l'IA. L'enjeu est maintenant de scaler et de faire de cette maturité un avantage concurrentiel visible.\",\n    recos: [\n      \"Faites de votre maturité IA un argument visible auprès de vos clients et partenaires\",\n      \"Explorez les modèles IA spécialisés à votre secteur pour aller encore plus loin\",\n      \"Diffusez la culture IA à toute l'organisation, au-delà de votre équipe directe\"\n    ]\n  }\n};\n\nconst lc = content[level] || content['Observateur'];\n\nconst questionLabels = {\n  q1: \"Outils IA utilisés dans l'équipe\",\n  q2: \"Automatisations IA en place\",\n  q3: \"Gains de temps liés à l'IA\",\n  q4: \"Niveau de maîtrise IA\",\n  q5: \"Formation aux outils IA\",\n  q6: \"Documentation des bonnes pratiques\",\n  q7: \"Organisation des données\",\n  q8: \"Standardisation des processus\",\n  q9: \"IA dans les prises de décision\",\n  q10: \"Vision stratégique de la direction\",\n  q11: \"Culture de partage sur l'IA\",\n  q12: \"Gouvernance et règles IA\"\n};\n\nconst answerMap = { 1: '1/4', 2: '2/4', 3: '3/4', 4: '4/4' };\nconst answers = data.answers || {};\n\nlet qaRows = '';\nfor (const [key, val] of Object.entries(answers)) {\n  const label = questionLabels[key] || key;\n  const valueLabel = answerMap[val] || val;\n  qaRows += '<tr>' +\n    '<td style=\"padding:8px 12px;font-size:13px;color:#555;border-bottom:1px solid #f0f0f0;\">' + label + '</td>' +\n    '<td style=\"padding:8px 12px;font-size:13px;font-weight:600;color:#111;border-bottom:1px solid #f0f0f0;white-space:nowrap;\">' + valueLabel + '</td>' +\n    '</tr>';\n}\n\nconst recoItems = lc.recos\n  .map(r => '<li style=\"font-size:14px;color:#444;margin-bottom:8px;line-height:1.55;\">' + r + '</li>')\n  .join('');\n\nreturn [{\n  json: {\n    email: data.email || '',\n    phone: data.phone || null,\n    score,\n    level,\n    levelColor: lc.color,\n    levelBgColor: lc.bgColor,\n    levelDesc: lc.desc,\n    recoItems,\n    qaRows,\n    phoneDisplay: data.phone || 'Non renseigné'\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0002-0002-0002-000000000002",
+      "name": "Préparer données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "audit@nocodefactory.fr",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ 'Votre niveau de maturité IA : ' + $json.level + ' (' + $json.score + '/48)' }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;'><table width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td align='center' style='padding:32px 16px;'><table cellpadding='0' cellspacing='0' border='0' style='max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;'><tr><td style='background:#111111;padding:24px 32px;'><span style='color:#ffffff;font-size:20px;font-weight:800;font-family:Arial,sans-serif;'>Nocode Factory</span></td></tr><tr><td style='padding:36px 32px 16px;text-align:center;border-bottom:1px solid #f0f0f0;'><p style='margin:0 0 6px;font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;font-family:Arial,sans-serif;'>Votre score de maturité IA</p><div><span style='font-size:60px;font-weight:900;color:#1FAAFF;line-height:1;font-family:Arial,sans-serif;'>{{ $json.score }}</span><span style='font-size:20px;font-weight:600;color:#ccc;font-family:Arial,sans-serif;'>/48</span></div><div style='margin-top:12px;'><span style='display:inline-block;padding:5px 18px;border-radius:99px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:{{ $json.levelBgColor }};color:{{ $json.levelColor }};font-family:Arial,sans-serif;'>{{ $json.level }}</span></div></td></tr><tr><td style='padding:24px 32px 16px;'><p style='margin:0;font-size:15px;color:#555;line-height:1.65;text-align:center;font-family:Arial,sans-serif;'>{{ $json.levelDesc }}</p></td></tr><tr><td style='padding:0 32px 24px;'><div style='background:#f4f8ff;border-radius:10px;padding:20px 24px;'><p style='margin:0 0 14px;font-size:14px;font-weight:700;color:#111;font-family:Arial,sans-serif;'>Vos 3 prochaines étapes</p><ul style='margin:0;padding-left:18px;'>{{ $json.recoItems }}</ul></div></td></tr><tr><td style='padding:24px 32px 36px;text-align:center;'><a href='https://cal.com/valentin-bert-04ow8i/15min' style='display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;font-family:Arial,sans-serif;'>Parler avec un expert</a></td></tr><tr><td style='background:#f5f5f5;padding:18px 32px;text-align:center;font-size:12px;color:#aaa;font-family:Arial,sans-serif;border-top:1px solid #eee;'>Nocode Factory &nbsp;&middot;&nbsp; <a href='https://www.nocodefactory.fr' style='color:#aaa;text-decoration:none;'>nocodefactory.fr</a></td></tr></table></td></tr></table></body></html>",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-0003-0003-000000000003",
+      "name": "Email Lead",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 160]
+    },
+    {
+      "parameters": {
+        "fromEmail": "audit@nocodefactory.fr",
+        "toEmail": "angel@nocodefactory.fr",
+        "subject": "={{ 'Audit IA : ' + $json.level + ' (' + $json.score + '/48) de ' + $json.email }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;'><table width='100%' cellpadding='0' cellspacing='0' border='0'><tr><td align='center' style='padding:32px 16px;'><table cellpadding='0' cellspacing='0' border='0' style='max-width:560px;width:100%;background:#fff;border-radius:12px;overflow:hidden;'><tr><td style='background:#111;padding:24px 32px;'><span style='color:#fff;font-size:18px;font-weight:800;font-family:Arial,sans-serif;'>Audit IA &middot; Nouveau résultat</span></td></tr><tr><td style='padding:28px 32px 20px;'><div style='background:#f4f8ff;border-radius:10px;padding:20px 24px;margin-bottom:24px;text-align:center;'><span style='font-size:48px;font-weight:900;color:#1FAAFF;line-height:1;font-family:Arial,sans-serif;'>{{ $json.score }}</span><span style='font-size:16px;color:#ccc;'>/48</span><br><span style='display:inline-block;margin-top:8px;padding:4px 14px;border-radius:99px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:{{ $json.levelBgColor }};color:{{ $json.levelColor }};font-family:Arial,sans-serif;'>{{ $json.level }}</span></div><table cellpadding='0' cellspacing='0' width='100%' style='border:1px solid #eee;border-radius:8px;margin-bottom:24px;border-collapse:collapse;'><tr><td style='padding:10px 16px;font-size:13px;color:#999;background:#fafafa;width:120px;border-bottom:1px solid #eee;'>Email</td><td style='padding:10px 16px;font-size:14px;font-weight:700;color:#111;background:#fafafa;border-bottom:1px solid #eee;'>{{ $json.email }}</td></tr><tr><td style='padding:10px 16px;font-size:13px;color:#999;'>Téléphone</td><td style='padding:10px 16px;font-size:14px;font-weight:700;color:#111;'>{{ $json.phoneDisplay }}</td></tr></table><p style='margin:0 0 10px;font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;'>Détail des réponses</p><table cellpadding='0' cellspacing='0' width='100%' style='border:1px solid #eee;border-radius:8px;border-collapse:collapse;'>{{ $json.qaRows }}</table></td></tr><tr><td style='padding:0 32px 28px;'><a href='https://cal.com/valentin-bert-04ow8i/15min' style='display:inline-block;background:#1FAAFF;color:#fff;text-decoration:none;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:700;font-family:Arial,sans-serif;'>Voir le calendrier Valentin</a></td></tr></table></td></tr></table></body></html>",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0004-0004-0004-000000000004",
+      "name": "Email NCF",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 440]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Préparer données", "type": "main", "index": 0 }]
+      ]
+    },
+    "Préparer données": {
+      "main": [
+        [
+          { "node": "Email Lead", "type": "main", "index": 0 },
+          { "node": "Email NCF", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
